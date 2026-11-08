@@ -1,0 +1,78 @@
+name: Refresh newsdesk
+
+on:
+  schedule:
+    # 20:15 UTC daily = 7:15am Sydney while daylight saving applies (Oct to Apr), 6:15am otherwise.
+    # Same time as the claude.ai routine this replaced. Weekends included.
+    - cron: "15 20 * * *"
+  workflow_dispatch:        # the "Run workflow" button = manual refresh
+  push:
+    branches: [main]
+    paths: [fetch.py, write.py, docs/**, .github/workflows/refresh.yml]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Fetch the data from the last published run (so a failed step keeps yesterday's page)
+        run: |
+          base="${{ steps.pages.outputs.base_url }}"
+          for f in prices news themes derivatives; do
+            if curl -sSL --fail --max-time 60 -o "docs/data/$f.live.json" "$base/data/$f.json?t=$(date +%s)"; then
+              mv "docs/data/$f.live.json" "docs/data/$f.json"
+            else
+              echo "no previous $f.json on the site (first run or private Pages); keeping the repo copy"
+              rm -f "docs/data/$f.live.json"
+            fi
+          done
+
+      - name: Fetch prices and headlines
+        run: python fetch.py --out docs/data
+        continue-on-error: true
+
+      - name: Write summaries and effects cards (write.py skips itself when the ANTHROPIC_API_KEY secret is not set)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          pip install -q anthropic
+          python write.py --out docs/data
+        continue-on-error: true
+
+      - name: Show what was refreshed
+        run: cat docs/data/meta.json 2>/dev/null || true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

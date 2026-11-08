@@ -1,0 +1,277 @@
+[
+ {
+  "id": "power",
+  "order": 1,
+  "driver": "Data-centre backlash, permitting risk and hyperscaler pullback",
+  "symbol": "VRT",
+  "field": "w1",
+  "op": "<",
+  "threshold": -0.1,
+  "trigger_label": "Vertiv down more than 10% on the week",
+  "second": [
+   "Local ballot defeats and a Texas governor who backs a moratorium put interconnection and permitting timelines for planned US campuses at risk.",
+   "Microsoft is winding down its Oracle lease, cutting neocloud usage and tightening oversight of partner builds, which pushes schedule risk back onto developers.",
+   "Power-equipment names (VRT -21%, ETN -7.6% on the week) are de-rated as the market prices slower order growth."
+  ],
+  "third": [
+   "Capacity that is already energised and permitted gains scarcity value over greenfield pipelines.",
+   "Paying for your own power and offering community benefits becomes the cost of entry, which lifts capex per MW.",
+   "Canada, the Nordics and Australia become relative winners for new capacity, though local opposition is spreading there too."
+  ],
+  "suggest": [
+   "Lead investor messaging with energised MW, contracted counterparties and the fact that the Texas delay comes from a Microsoft design change, not IREN's execution.",
+   "Stress-test the Texas build and the $15bn capex plan against a 6 to 12 month permitting or moratorium delay.",
+   "Show customer diversification beyond any single hyperscaler."
+  ],
+  "watch": [
+   "Texas moratorium bills",
+   "Microsoft neocloud stance",
+   "Local DC votes",
+   "VRT / ETN"
+  ]
+ },
+ {
+  "id": "chips",
+  "order": 2,
+  "driver": "AI semis rout and capex-peak debate",
+  "symbol": "SOXX",
+  "field": "m1",
+  "op": "<",
+  "threshold": -0.15,
+  "trigger_label": "SOXX down more than 15% over the month",
+  "second": [
+   "Equity holders are questioning hyperscaler capex near $1tn a year, and the selloff has spread from chips to software (IGV -9.8% over the month).",
+   "Asian chip exporters (Samsung, SK Hynix, TSMC, Advantest) carry the second leg, which hits KOSPI and Nikkei liquidity.",
+   "GPU resale and recontracting prices become the test of asset value; IREN says it recontracted H100s at double the original price."
+  ],
+  "third": [
+   "If capex guidance is cut, GPU-backed ABS and leasing structures face lower collateral values and higher advance-rate haircuts.",
+   "Lower equity valuations make converts and ATM programmes more dilutive, which pushes issuers toward secured or project-level debt.",
+   "Consolidation favours scaled operators, a point Breakingviews made when it wrote that global muscle will sift out puny data-centre providers."
+  ],
+  "suggest": [
+   "Bring recontracting and utilisation data into investor materials to answer the obsolescence question directly.",
+   "Model convert and ATM capacity at 20 to 30% lower equity values before planning the next raise.",
+   "Track hyperscaler capex commentary into year-end."
+  ],
+  "watch": [
+   "SOXX",
+   "Nvidia guidance",
+   "Nebius 12 Nov results",
+   "GPU rental rates"
+  ]
+ },
+ {
+  "id": "credit",
+  "order": 3,
+  "driver": "Neocloud credit repricing and bank retreat from data-centre loans",
+  "symbol": "^VIX",
+  "field": "last",
+  "op": ">",
+  "threshold": 22,
+  "trigger_label": "VIX above 22",
+  "second": [
+   "CoreWeave's 2032 bonds yield above 16%, which resets the yield investors demand for the whole neocloud HY cohort.",
+   "ING is auctioning $500m of data-centre loans that include a slice of Stargate, a sign that banks are cutting exposure.",
+   "KBRA reports the largest quarterly jump in private-credit defaults, and lenders are tightening terms."
+  ],
+  "third": [
+   "Private credit and infrastructure funds that still have capital to deploy gain pricing power, so covenants, cash sweeps and step-ups get stricter.",
+   "Investment-grade hyperscaler paper (Meta's bond sale) crowds out lower-rated issuers in the same market.",
+   "Contracted take-or-pay revenue with investment-grade counterparties becomes the main way to separate credits."
+  ],
+  "suggest": [
+   "Prepare a deal so it can launch fast if the VIX falls back below 20, rather than issuing into the current spread spike.",
+   "Compare secured project financing against unsecured high-yield or converts at today's neocloud spreads.",
+   "Stress-test liquidity runway if markets stay shut for 3 to 6 months."
+  ],
+  "watch": [
+   "CoreWeave 2032 bond",
+   "Private-credit defaults",
+   "VIX",
+   "ING loan auction"
+  ]
+ },
+ {
+  "id": "rates",
+  "order": 4,
+  "driver": "Sticky US yields and a hiking Fed",
+  "symbol": "^TNX",
+  "field": "last",
+  "op": ">",
+  "threshold": 4.75,
+  "trigger_label": "US 10-year above 4.75%",
+  "second": [
+   "The Fed hiked this week and signalled more, and payrolls of 165,000 keep that path open.",
+   "Higher base rates raise all-in coupons for data-centre project debt and lower the present value of long-dated leases.",
+   "A Democratic Congress limits fiscal expansion but blocks Trump's pressure on the Fed, so rates are less likely to be cut for political reasons."
+  ],
+  "third": [
+   "Long-duration infrastructure equity and data-centre REITs (DLR, EQIX) are revalued on cap rates.",
+   "Floating-rate private credit stays attractive to lenders but squeezes borrower coverage ratios.",
+   "If Tuesday's CPI is hot and the 10-year moves above 5%, a risk-off move could close primary markets for weeks."
+  ],
+  "suggest": [
+   "Look at hedging floating-rate exposure or fixing rates on new facilities while the 10-year is below 5%.",
+   "Set financing timing around Tuesday's CPI.",
+   "Stress-test project returns at a 5.25% 10-year."
+  ],
+  "watch": [
+   "US CPI Tue",
+   "Fed speakers",
+   "10-year 5% level",
+   "2s10s"
+  ]
+ },
+ {
+  "id": "oil",
+  "order": 5,
+  "driver": "Iran war: Hormuz closure versus deal hopes",
+  "symbol": "BZ=F",
+  "field": "last",
+  "op": ">",
+  "threshold": 95,
+  "trigger_label": "Brent above $95",
+  "second": [
+   "The strait is still closed and tankers keep hitting mines, so prices can jump on any break in Qatar's mediation.",
+   "Oil 60% higher year to date keeps headline inflation and central-bank hiking (Fed, RBA, BoE, BoJ) in play.",
+   "Gas and LNG markets are tight in Asia and Europe, which raises the marginal cost of power in import-dependent grids."
+  ],
+  "third": [
+   "High energy costs sharpen political scrutiny of data-centre power use and electricity bills.",
+   "Behind-the-meter gas and fuel cells win share as reliability becomes the priority.",
+   "A durable deal would pull headline inflation down quickly and could reopen rate-cut expectations in 2027."
+  ],
+  "suggest": [
+   "Present power procurement as fixed or contracted, with little exposure to spot gas spikes.",
+   "Run an energy-cost sensitivity at Brent $110 and $80.",
+   "Note that renewable and hydro supply at Canadian and Texas sites shields IREN from imported energy prices."
+  ],
+  "watch": [
+   "Qatar 48-hour plan",
+   "Hormuz traffic",
+   "Brent $105 / $90",
+   "Vance ceasefire push"
+  ]
+ },
+ {
+  "id": "korea",
+  "order": 6,
+  "driver": "KOSPI crash and Korean chip contagion",
+  "symbol": "^KS11",
+  "field": "w1",
+  "op": "<",
+  "threshold": -0.08,
+  "trigger_label": "KOSPI down more than 8% on the week",
+  "second": [
+   "Circuit breakers, margin calls and leveraged-ETF losses force Korean retail and foreign investors to sell.",
+   "The government is waiving collateral rules and weighing a stabilisation fund, so policy is now supporting the market.",
+   "Korean retail money is shifting into US stocks and leveraged semis ETFs, which adds to volatility in US AI names."
+  ],
+  "third": [
+   "Memory price expectations could soften if hyperscaler orders slow, which would change GPU server cost curves.",
+   "A weaker won makes Korean memory exports cheaper and supports Korea's external accounts.",
+   "Asian investor appetite for AI-infrastructure paper weakens for now."
+  ],
+  "suggest": [
+   "Track HBM supply and pricing as an input to server capex assumptions.",
+   "Keep Asian roadshow plans flexible until the KOSPI stabilises."
+  ],
+  "watch": [
+   "KOSPI 5,000",
+   "Samsung / SK Hynix",
+   "USD/KRW",
+   "Stabilisation fund"
+  ]
+ },
+ {
+  "id": "japan",
+  "order": 7,
+  "driver": "Nikkei bear market and the BoJ hiking path",
+  "symbol": "^N225",
+  "field": "m1",
+  "op": "<",
+  "threshold": -0.15,
+  "trigger_label": "Nikkei down more than 15% over the month",
+  "second": [
+   "SoftBank, Advantest and Tokyo Electron are where Japan is most exposed to the AI unwind.",
+   "The BoJ, with odds of a December hike near 68%, plus a plan to sell its ETF holdings, means domestic liquidity is tightening.",
+   "USD/JPY near 160 raises the risk of intervention and a sharp yen move."
+  ],
+  "third": [
+   "A carry-trade unwind would spread volatility across global risk assets and credit.",
+   "SoftBank's capacity to fund OpenAI and Stargate commitments comes under scrutiny.",
+   "A stronger yen would weigh on Japanese demand for US credit."
+  ],
+  "suggest": [
+   "Watch SoftBank and Stargate funding headlines as a signal of the wider AI capex appetite.",
+   "Set triggers for risk-off moves around a BoJ December hike."
+  ],
+  "watch": [
+   "USD/JPY 160",
+   "BoJ December",
+   "SoftBank",
+   "Nikkei"
+  ]
+ },
+ {
+  "id": "aus",
+  "order": 8,
+  "driver": "RBA at 4.85% and AUD below 0.70",
+  "symbol": "AUDUSD=X",
+  "field": "last",
+  "op": "<",
+  "threshold": 0.7,
+  "trigger_label": "AUD/USD below 0.70",
+  "second": [
+   "Dovish guidance after the hike, and a weaker AUD, reflect pressure on growth and a recession-like squeeze.",
+   "A weaker AUD lifts the AUD value of USD revenue and USD-denominated assets for Australian-listed holders.",
+   "Labor is pitching Australia as a destination for data centres while local opposition grows."
+  ],
+  "third": [
+   "Australian super funds may increase offshore infrastructure allocations if domestic growth slows.",
+   "Federal data-centre policy (power, water, planning) becomes a 2027 political issue.",
+   "Spending cuts could slow grid-investment support."
+  ],
+  "suggest": [
+   "Present AUD-based investors with USD exposure as a natural hedge.",
+   "Engage with Australian policy discussions on data-centre siting and power."
+  ],
+  "watch": [
+   "RBA guidance",
+   "AUD/USD",
+   "Data-centre policy",
+   "ASX tech"
+  ]
+ },
+ {
+  "id": "russia",
+  "order": 9,
+  "driver": "Russia-Ukraine talks in Abu Dhabi and Xi-Trump-Putin diplomacy",
+  "symbol": "GC=F",
+  "field": "last",
+  "op": "always",
+  "threshold": null,
+  "trigger_label": "Always on while talks are active",
+  "second": [
+   "A deal framework would weaken the energy risk premium in Europe and ease pressure on gas.",
+   "Russian strikes on Ukrainian energy infrastructure show how much leverage both sides still hold ahead of the talks.",
+   "A Xi-Trump-Putin meeting could reshape trade and tariff expectations, including rules on chip exports."
+  ],
+  "third": [
+   "Any sanctions relief would change commodity flows, from LNG and oil to uranium enrichment supply.",
+   "Gold at $4,075 shows hedging demand will persist until trust improves.",
+   "A US security framework for Europe could shift European defence and grid spending."
+  ],
+  "suggest": [
+   "Track tariff and chip-export headlines from the Xi-Trump-Putin meeting for supply-chain effects on GPU procurement.",
+   "Avoid assuming energy relief in base-case planning."
+  ],
+  "watch": [
+   "Abu Dhabi 10–11 Nov",
+   "Xi-Trump-Putin",
+   "Gold",
+   "EU gas"
+  ]
+ }
+]

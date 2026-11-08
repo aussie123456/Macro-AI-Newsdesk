@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Macro & AI Newsdesk</title>
+<meta name="description" content="Daily macro and AI news desk: broad markets, sectors, second- and third-order effects, and curated headlines on AI data centres, US-Iran, geopolitics, Korea, Japan, Australia and energy.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+  /* Design tokens the page was written against (standalone replacement for the claude.ai Dashboard runtime). */
+  :root {
+    --cds-rem-scale: 1;
+    --cds-gap-xs: .375rem; --cds-gap-sm: .5rem; --cds-gap-md: .75rem; --cds-gap-lg: 1.25rem; --cds-gap-xl: 2rem;
+    --cds-pad-xs: .375rem; --cds-pad-sm: .5rem; --cds-pad-md: .75rem; --cds-pad-lg: 1rem;
+    --cds-radius: .5rem;
+    --cds-font-size-caption: .75rem; --cds-font-size-body: .875rem; --cds-font-size-heading: .9375rem; --cds-font-size-title: 1.375rem;
+    --cds-font-weight-medium: 500;
+    --cds-dur-slow: .45s;
+    --font-anthropic-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-anthropic-serif: ui-serif, Georgia, "Times New Roman", serif;
+    --color-bg: #faf9f5; --color-panel: #ffffff; --color-fg: #141413; --color-fg-muted: #5f5e5a;
+    --color-border-line: rgb(0 0 0 / 0.1); --cds-border: rgb(0 0 0 / 0.1); --color-bad: #a42528; --color-ok: #006c10;
+    --cds-text-secondary: #3d3d3a; --cds-chart-reference: #8a8984; --cds-chart-grid: rgb(0 0 0 / 0.08); --cds-chart-axis: #3d3d3a;
+    --cds-surface-popover: #ffffff; --cds-shadow-popover: 0 8px 24px #0000001f, 0 2px 6px #00000014;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --color-bg: #1f1e1b; --color-panel: #2a2926; --color-fg: rgb(255 255 255 / 0.93); --color-fg-muted: rgb(255 255 255 / 0.57);
+      --color-border-line: rgb(255 255 255 / 0.1); --cds-border: rgb(255 255 255 / 0.1); --color-bad: #f17778; --color-ok: #53c556;
+      --cds-text-secondary: rgb(255 255 255 / 0.75); --cds-chart-reference: #a8a69e; --cds-chart-grid: rgb(255 255 255 / 0.08); --cds-chart-axis: #c3c2b7;
+      --cds-surface-popover: #303030; --cds-shadow-popover: 0 8px 24px #00000052, 0 2px 6px #0003;
+    }
+  }
+  :root[data-theme="dark"] {
+    --color-bg: #1f1e1b; --color-panel: #2a2926; --color-fg: rgb(255 255 255 / 0.93); --color-fg-muted: rgb(255 255 255 / 0.57);
+    --color-border-line: rgb(255 255 255 / 0.1); --cds-border: rgb(255 255 255 / 0.1); --color-bad: #f17778; --color-ok: #53c556;
+    --cds-text-secondary: rgb(255 255 255 / 0.75); --cds-chart-reference: #a8a69e; --cds-chart-grid: rgb(255 255 255 / 0.08); --cds-chart-axis: #c3c2b7;
+    --cds-surface-popover: #303030; --cds-shadow-popover: 0 8px 24px #00000052, 0 2px 6px #0003;
+  }
+  html { background: var(--color-bg); }
+  body { margin: 0 auto; padding: 1.25rem 16px 3rem; background: var(--color-bg); color: var(--color-fg); font-family: var(--font-anthropic-sans); font-size: var(--cds-font-size-body); line-height: 1.45; max-width: 1280px; }
+  .dash-skeleton { color: transparent !important; -webkit-text-fill-color: transparent !important; background: color-mix(in srgb, currentColor 13%, transparent); border-radius: .25rem; }
+  .dash-foot { margin-top: 2rem; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; }
+</style>
+<script>
+/* Minimal stand-in for the claude.ai Dashboard runtime. The page below calls dash.data / dash.calc / dash.params /
+   dash.setParams / dash.onData / dash.setLink. Data comes from the static JSON files written by the GitHub Actions run. */
+window.dash = (function () {
+  const sources = { prices: 'data/prices.json', news: 'data/news.json', themes: 'data/themes.json', derivatives: 'data/derivatives.json' };
+  const state = {}, calcs = {}, listeners = [];
+  Object.keys(sources).forEach(function (k) { state[k] = { status: 'loading', data: null }; });
+  const params = { window: '3M' };
+  try { const q = new URLSearchParams(location.search); if (q.get('window')) params.window = q.get('window'); } catch (e) {}
+  function compute() {
+    Object.keys(calcs).forEach(function (id) {
+      const c = calcs[id], ins = c.inputs.map(function (i) { return state[i] || { status: 'loading' }; });
+      if (ins.every(function (s) { return s.status === 'ok'; })) {
+        try { state[id] = { status: 'ok', data: c.fn.apply(null, ins.map(function (s) { return s.data; })) }; }
+        catch (e) { console.error('calc ' + id, e); state[id] = { status: 'error', data: null, error: String(e) }; }
+      } else {
+        state[id] = { status: ins.some(function (s) { return s.status === 'error'; }) ? 'error' : 'loading', data: null };
+      }
+    });
+  }
+  function emit() { compute(); listeners.forEach(function (f) { try { f(); } catch (e) { console.error(e); } }); }
+  async function load() {
+    await Promise.all(Object.keys(sources).map(async function (k) {
+      try {
+        const r = await fetch(sources[k] + '?t=' + Date.now(), { cache: 'no-store' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        state[k] = { status: 'ok', data: await r.json() };
+      } catch (e) {
+        console.error('load ' + k, e);
+        if (state[k].status !== 'ok') state[k] = { status: 'error', data: null, error: String(e) };
+      }
+    }));
+    emit();
+    const foot = document.getElementById('dash-loaded');
+    if (foot) foot.textContent = 'Page checked for new data at ' + new Date().toLocaleTimeString('en-AU', { timeZone: 'Australia/Sydney', hour: 'numeric', minute: '2-digit' }) + ' Sydney';
+  }
+  document.addEventListener('DOMContentLoaded', function () { load(); setInterval(load, 30 * 60 * 1000); });
+  return {
+    data: function (id) { return state[id] || { status: 'loading', data: null }; },
+    calc: function (id, spec) { calcs[id] = spec; state[id] = { status: 'loading', data: null }; },
+    params: function () { return Object.assign({}, params); },
+    setParams: function (p) {
+      Object.assign(params, p || {});
+      try { const u = new URL(location.href); Object.keys(params).forEach(function (k) { u.searchParams.set(k, params[k]); }); history.replaceState(null, '', u); } catch (e) {}
+      emit();
+    },
+    onData: function (fn) { listeners.push(fn); try { fn(); } catch (e) { console.error(e); } },
+    setLink: function (id) { try { history.replaceState(null, '', '#' + id); } catch (e) {} },
+    reload: load
+  };
+})();
+</script>
+</head>
+<body>
+<style>
+.nd { font-family: var(--font-anthropic-sans); font-variant-numeric: tabular-nums; }
+.nd *, .nd *::before, .nd *::after { box-sizing: border-box; }
+.nd-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--cds-gap-xs) var(--cds-gap-lg); margin-bottom: var(--cds-gap-xs); }
+.nd-head h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; }
+.nd-asof { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); min-width: 12rem; }
+.nd-lead { margin: 0 0 var(--cds-gap-md); max-width: 78ch; font-size: var(--cds-font-size-body); line-height: 1.5; min-height: 1.5em; }
+.nd-nav { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--cds-gap-lg); }
+.nd-nav a { font-size: var(--cds-font-size-caption); border: 1px solid var(--color-border-line); border-radius: 999px; padding: 3px 10px; color: var(--color-fg); text-decoration: none; }
+.nd-nav a:hover, .nd-nav a:focus-visible { background: var(--color-panel); outline: none; border-color: var(--color-fg-muted); }
+.nd-section { margin-bottom: var(--cds-gap-xl); }
+.nd-sechead { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--cds-gap-sm); margin-bottom: var(--cds-gap-sm); }
+.nd-sechead h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
+.nd-sechead .hint { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.nd-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); gap: var(--cds-gap-sm); margin-bottom: var(--cds-gap-sm); }
+.nd-tile { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-md); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.nd-tile .t-name { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nd-tile .t-val { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-title); line-height: 1.15; min-height: 1.15em; }
+.nd-tile .t-chg { font-size: var(--cds-font-size-caption); display: flex; gap: var(--cds-gap-sm); flex-wrap: wrap; color: var(--color-fg-muted); }
+.nd-tile .t-chg b { font-weight: var(--cds-font-weight-medium); }
+.nd-tile .t-spark { height: 30px; margin-top: 6px; }
+.nd .up { color: var(--color-ok); } .nd .down { color: var(--color-bad); }
+.nd-chips { display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs); margin-bottom: var(--cds-gap-lg); font-size: var(--cds-font-size-caption); }
+.nd-chip { border: 1px solid var(--color-border-line); border-radius: 999px; padding: 3px 10px; display: flex; gap: 6px; color: var(--color-fg-muted); }
+.nd-chip b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+.nd-win { display: flex; gap: 4px; }
+.nd-win button { font: inherit; font-size: var(--cds-font-size-caption); border: 1px solid var(--color-border-line); background: transparent; color: var(--color-fg); border-radius: 999px; padding: 2px 10px; cursor: pointer; }
+.nd-win button[aria-pressed="true"] { background: var(--color-fg); color: var(--color-bg); border-color: var(--color-fg); }
+.nd-win button:focus-visible { outline: 2px solid var(--color-fg-muted); outline-offset: 2px; }
+.nd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--cds-gap-md); margin-bottom: var(--cds-gap-md); }
+.nd-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); min-width: 0; }
+.nd-card h3 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
+.nd-card .note { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin: 2px 0 var(--cds-gap-sm); }
+.nd-chart { position: relative; min-height: 250px; }
+.nd-chart svg { display: block; }
+.nd-chart svg text { font-family: var(--font-anthropic-sans); }
+.nd-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: var(--cds-gap-xs); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.nd-legend span.sw { display: inline-block; width: 10px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+.nd-legend b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+.nd-tip { position: absolute; pointer-events: none; display: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); white-space: nowrap; z-index: 5; color: var(--color-fg); }
+.nd-tip .d { color: var(--cds-text-secondary); margin-bottom: 2px; }
+.nd-tip .r { display: flex; align-items: center; gap: 6px; }
+.nd-tip .sw { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+.nd-tablewrap { overflow-x: auto; }
+table.nd-perf { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-caption); }
+.nd-perf th, .nd-perf td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+.nd-perf th:first-child, .nd-perf td:first-child { text-align: left; }
+.nd-perf thead th { color: var(--color-fg-muted); font-weight: var(--cds-font-weight-medium); }
+.nd-perf tr.grp th { text-align: left; color: var(--color-fg-muted); text-transform: uppercase; letter-spacing: .05em; font-size: 0.68rem; padding-top: 12px; font-weight: var(--cds-font-weight-medium); }
+.nd-perf td.sub { padding-left: 22px; color: var(--color-fg-muted); }
+.nd-news { display: flex; flex-direction: column; gap: var(--cds-gap-md); }
+.nd-theme { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--cds-gap-sm) var(--cds-gap-xl); }
+.nd-theme h3 { grid-column: 1 / -1; }
+.nd-theme .summary { font-size: var(--cds-font-size-body); line-height: 1.55; margin: 0; min-height: 1.5em; }
+.nd-theme ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; min-height: 1.5em; }
+.nd-theme li { font-size: var(--cds-font-size-caption); line-height: 1.35; padding-left: 10px; border-left: 2px solid var(--color-border-line); }
+.nd-theme li a { color: var(--color-fg); text-decoration: none; }
+.nd-theme li a:hover, .nd-theme li a:focus-visible { text-decoration: underline; }
+.nd-theme li .src { color: var(--color-fg-muted); display: block; margin-top: 1px; }
+@media (max-width: 640px) { .nd-theme { grid-template-columns: minmax(0, 1fr); } }
+.nd-fail { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); min-height: inherit; }
+.nd-fail::before { content: ""; width: .375rem; height: .375rem; border-radius: 50%; background: var(--color-bad); }
+.nd-effects { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: var(--cds-gap-md); }
+.nd-effect { display: flex; flex-direction: column; gap: var(--cds-gap-sm); }
+.nd-effect.off { opacity: .55; }
+.nd-effect .ehead { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 10px; }
+.nd-effect .pill { font-size: 0.68rem; text-transform: uppercase; letter-spacing: .05em; border-radius: 999px; padding: 2px 8px; border: 1px solid var(--color-border-line); color: var(--color-fg-muted); white-space: nowrap; }
+.nd-effect .pill.on { color: var(--color-ok); border-color: var(--color-ok); }
+.nd-effect .reading { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin: 0; }
+.nd-effect h4 { font-size: var(--cds-font-size-caption); text-transform: uppercase; letter-spacing: .05em; color: var(--color-fg-muted); margin: 4px 0 0; font-weight: var(--cds-font-weight-medium); }
+.nd-effect ul { margin: 0; padding-left: 1.1em; font-size: var(--cds-font-size-caption); line-height: 1.4; display: flex; flex-direction: column; gap: 4px; }
+.nd-effect ul.suggest li::marker { color: var(--color-ok); }
+.nd-effect .watch { display: flex; flex-wrap: wrap; gap: 4px; }
+.nd-effect .watch span { font-size: 0.72rem; border: 1px solid var(--color-border-line); border-radius: 4px; padding: 1px 6px; color: var(--color-fg-muted); }
+.nd-foot { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); max-width: 90ch; line-height: 1.5; }
+.nd [data-dash-source-state=empty] { color: transparent; }
+.nd [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+</style>
+
+<div class="nd" id="newsdesk">
+  <header class="nd-head">
+    <h1>Macro &amp; AI Newsdesk</h1>
+    <span class="nd-asof dash-skeleton" data-source="themes" data-field="asof" data-where="theme=brief">—</span>
+  </header>
+  <p class="nd-lead dash-skeleton" id="brief" data-source="themes" data-field="summary" data-where="theme=brief">—</p>
+  <nav class="nd-nav" aria-label="Sections">
+    <a href="#markets">Broad markets</a>
+    <a href="#sectors">Sectors</a>
+    <a href="#effects">2nd/3rd-order effects</a>
+    <a href="#news-markets">Markets wrap</a>
+    <a href="#news-ai">AI &amp; data centres</a>
+    <a href="#news-iran">US–Iran</a>
+    <a href="#news-geo">Geopolitics</a>
+    <a href="#news-uspol">US politics</a>
+    <a href="#news-korea">Korea</a>
+    <a href="#news-japan">Japan</a>
+    <a href="#news-aus">Australia</a>
+    <a href="#news-energy">Energy</a>
+  </nav>
+
+  <section class="nd-section" id="markets">
+    <div class="nd-sechead">
+      <h2>Broad markets</h2>
+      <div class="nd-win" role="group" aria-label="Chart window" id="win">
+        <button type="button" data-win="1M" aria-pressed="false">1M</button>
+        <button type="button" data-win="3M" aria-pressed="true">3M</button>
+        <button type="button" data-win="6M" aria-pressed="false">6M</button>
+        <button type="button" data-win="1Y" aria-pressed="false">1Y</button>
+      </div>
+    </div>
+    <div class="nd-tiles" id="tiles">
+      <div class="nd-tile" data-sym="^GSPC"><span class="t-name">S&amp;P 500</span><span class="t-val dash-skeleton" data-source="perf" data-field="last" data-where="symbol=^GSPC">—</span><span class="t-chg"><span><b data-source="perf" data-field="d1" data-where="symbol=^GSPC">—</b> 1d</span><span><b data-source="perf" data-field="w1" data-where="symbol=^GSPC">—</b> 1w</span><span><b data-source="perf" data-field="m1" data-where="symbol=^GSPC">—</b> 1m</span></span><div class="t-spark" data-source="prices"></div></div>
+      <div class="nd-tile" data-sym="^IXIC"><span class="t-name">Nasdaq Composite</span><span class="t-val dash-skeleton" data-source="perf" data-field="last" data-where="symbol=^IXIC">—</span><span class="t-chg"><span><b data-source="perf" data-field="d1" data-where="symbol=^IXIC">—</b> 1d</span><span><b data-source="perf" data-field="w1" data-where="symbol=^IXIC">—</b> 1w</span><span><b data-source="perf" data-field="m1" data-where="symbol=^IXIC">—</b> 1m</span></span><div class="t-spark" data-source="prices"></div></div>
+      <div class="nd-tile" data-sym="^AXJO"><span class="t-name">ASX 200</span><span class="t-val dash-skeleton" data-source="perf" data-field="last" data-where="symbol=^AXJO">—</span><span class="t-chg"><span><b data-source="perf" data-field="d1" data-where="symbol=^AXJO">—</b> 1d</span><span><b data-source="perf" data-field="w1" data-where="symbol=^AXJO">—</b> 1w</span><span><b data-source="perf" data-field="m1" data-where="symbol=^AXJO">—</b> 1m</span></span><div class="t-spark" data-source="prices"></div></div>
+      <div class="nd-tile" data-sym="^KS11"><span class="t-name">KOSPI</span><span class="t-val dash-skeleton" data-source="perf" data-field="last" data-where="symbol=^KS11">—</span><span class="t-chg"><span><b data-source="perf" data-field="d1" data-where="symbol=^KS11">—</b> 1d</span><span><b data-source="perf" data-field="w1" data-where="symbol=^KS11">—</b> 1w</span><span><b data-source="perf" data-field="m1" data-where="symbol=^KS11">—</b> 1m</span></span><div class="t-spark" data-source="prices"></div></div>
+      <div class="nd-tile" data-sym="^N225"><span class="t-name">Nikkei 225</span><span class="t-val dash-skeleton" data-source="perf" data-field="last" data-where="symbol=^N225">—</span><span class="t-chg"><span><b data-source="perf" data-field="d1" data-where="symbol=^N225">—</b> 1d</span><span><b data-source="perf" data-field="w1" data-where="symbol=^N225">—</b> 1w</span><span><b data-source="perf" data-field="m1" data-where="symbol=^N225">—</b> 1m</span></span><div class="t-spark" data-source="prices"></div></div>
+      <div class="nd-tile" data-sym="BZ=F"><span class="t-name">Brent, USD/bbl</span><span class="t-val dash-skeleton" data-source="perf" data-field="last" data-where="symbol=BZ%3DF">—</span><span class="t-chg"><span><b data-source="perf" data-field="d1" data-where="symbol=BZ%3DF">—</b> 1d</span><span><b data-source="perf" data-field="w1" data-where="symbol=BZ%3DF">—</b> 1w</span><span><b data-source="perf" data-field="m1" data-where="symbol=BZ%3DF">—</b> 1m</span></span><div class="t-spark" data-source="prices"></div></div>
+      <div class="nd-tile" data-sym="CL=F"><span class="t-name">WTI, USD/bbl</span><span class="t-val dash-skeleton" data-source="perf" data-field="last" data-where="symbol=CL%3DF">—</span><span class="t-chg"><span><b data-source="perf" data-field="d1" data-where="symbol=CL%3DF">—</b> 1d</span><span><b data-source="perf" data-field="w1" data-where="symbol=CL%3DF">—</b> 1w</span><span><b data-source="perf" data-field="m1" data-where="symbol=CL%3DF">—</b> 1m</span></span><div class="t-spark" data-source="prices"></div></div>
+      <div class="nd-tile" data-sym="^TNX"><span class="t-name">US 10-year yield</span><span class="t-val dash-skeleton" data-source="perf" data-field="last" data-where="symbol=^TNX">—</span><span class="t-chg"><span><b data-source="perf" data-field="d1" data-where="symbol=^TNX">—</b> 1d</span><span><b data-source="perf" data-field="w1" data-where="symbol=^TNX">—</b> 1w</span><span><b data-source="perf" data-field="m1" data-where="symbol=^TNX">—</b> 1m</span></span><div class="t-spark" data-source="prices"></div></div>
+      <div class="nd-tile" data-sym="GC=F"><span class="t-name">Gold, USD/oz</span><span class="t-val dash-skeleton" data-source="perf" data-field="last" data-where="symbol=GC%3DF">—</span><span class="t-chg"><span><b data-source="perf" data-field="d1" data-where="symbol=GC%3DF">—</b> 1d</span><span><b data-source="perf" data-field="w1" data-where="symbol=GC%3DF">—</b> 1w</span><span><b data-source="perf" data-field="m1" data-where="symbol=GC%3DF">—</b> 1m</span></span><div class="t-spark" data-source="prices"></div></div>
+      <div class="nd-tile" data-sym="BTC-USD"><span class="t-name">Bitcoin, USD</span><span class="t-val dash-skeleton" data-source="perf" data-field="last" data-where="symbol=BTC-USD">—</span><span class="t-chg"><span><b data-source="perf" data-field="d1" data-where="symbol=BTC-USD">—</b> 1d</span><span><b data-source="perf" data-field="w1" data-where="symbol=BTC-USD">—</b> 1w</span><span><b data-source="perf" data-field="m1" data-where="symbol=BTC-USD">—</b> 1m</span></span><div class="t-spark" data-source="prices"></div></div>
+    </div>
+    <div class="nd-chips" id="chips">
+      <span class="nd-chip" data-sym="^VIX">VIX <b data-source="perf" data-field="last" data-where="symbol=^VIX">—</b><span data-source="perf" data-field="d1" data-where="symbol=^VIX">—</span></span>
+      <span class="nd-chip" data-sym="AUDUSD=X">AUD/USD <b data-source="perf" data-field="last" data-where="symbol=AUDUSD%3DX">—</b><span data-source="perf" data-field="d1" data-where="symbol=AUDUSD%3DX">—</span></span>
+      <span class="nd-chip" data-sym="USDJPY=X">USD/JPY <b data-source="perf" data-field="last" data-where="symbol=USDJPY%3DX">—</b><span data-source="perf" data-field="d1" data-where="symbol=USDJPY%3DX">—</span></span>
+      <span class="nd-chip" data-sym="KRW=X">USD/KRW <b data-source="perf" data-field="last" data-where="symbol=KRW%3DX">—</b><span data-source="perf" data-field="d1" data-where="symbol=KRW%3DX">—</span></span>
+    </div>
+    <div class="nd-grid">
+      <div class="nd-card" id="chart-broad" data-source="prices">
+        <h3>Equity indices, rebased to 100</h3>
+        <p class="note">S&amp;P 500, Nasdaq, ASX 200, KOSPI and Nikkei 225 in local currency, rebased at the start of the window.</p>
+        <div class="nd-chart dash-skeleton" id="broad-chart"></div>
+        <div class="nd-legend" id="broad-legend"></div>
+      </div>
+      <div class="nd-card" id="chart-oil" data-source="prices">
+        <h3>Crude oil, USD per barrel</h3>
+        <p class="note">Brent and WTI front-month futures.</p>
+        <div class="nd-chart dash-skeleton" id="oil-chart"></div>
+        <div class="nd-legend" id="oil-legend"></div>
+      </div>
+      <div class="nd-card" id="chart-10y" data-source="prices">
+        <h3>US 10-year Treasury yield, %</h3>
+        <p class="note">CBOE 10-year yield index (^TNX).</p>
+        <div class="nd-chart dash-skeleton" id="tnx-chart"></div>
+        <div class="nd-legend" id="tnx-legend"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="nd-section" id="sectors">
+    <div class="nd-sechead">
+      <h2>Sectors</h2>
+      <span class="hint">Same window as above. ETFs are US-listed proxies; coal is an equal-weight basket of four miners.</span>
+    </div>
+    <div class="nd-grid">
+      <div class="nd-card" id="chart-tech" data-source="prices">
+        <h3>Tech, infrastructure and pharma, rebased to 100</h3>
+        <p class="note">Software (IGV), semis (SOXX), data-centre infrastructure ex-semis (DTCR), pharma (XPH); S&amp;P 500 muted for reference.</p>
+        <div class="nd-chart dash-skeleton" id="tech-chart"></div>
+        <div class="nd-legend" id="tech-legend"></div>
+      </div>
+      <div class="nd-card" id="chart-energy" data-source="prices coal_basket">
+        <h3>Energy, rebased to 100</h3>
+        <p class="note">Uranium (URA), US natural gas (UNG), coal basket (Peabody, Core Natural Resources, Whitehaven, Yancoal), clean energy (ICLN).</p>
+        <div class="nd-chart dash-skeleton" id="energy-chart"></div>
+        <div class="nd-legend" id="energy-legend"></div>
+      </div>
+    </div>
+    <div class="nd-card" id="perf-card">
+      <h3>Performance table</h3>
+      <p class="note">Last close and change over 1 day, 1 week, 1 month, 3 months and since end-2025. The 10-year yield shows change in basis points.</p>
+      <div class="nd-tablewrap">
+        <table class="nd-perf" id="perf-table" data-source="perf" data-row-key="symbol">
+          <thead><tr><th data-field="name">Instrument</th><th data-field="last">Last</th><th data-field="d1">1d</th><th data-field="w1">1w</th><th data-field="m1">1m</th><th data-field="m3">3m</th><th data-field="ytd">YTD</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="nd-section" id="effects">
+    <div class="nd-sechead">
+      <h2>Second- and third-order effects</h2>
+      <span class="hint">Each driver has a market trigger evaluated against today's prices. Live drivers come first; untriggered ones are dimmed.</span>
+    </div>
+    <div class="nd-effects" id="effects-grid" data-source="derivatives perf"></div>
+  </section>
+
+  <section class="nd-section" id="news">
+    <div class="nd-sechead">
+      <h2>Newsflow</h2>
+      <span class="hint">Headlines from Google News, curated 19 Oct 2026. Times shown in your local timezone.</span>
+    </div>
+    <div class="nd-news">
+      <article class="nd-card nd-theme" id="news-markets" data-theme="markets"><h3>Markets wrap and week ahead</h3><p class="summary dash-skeleton" data-source="themes" data-field="summary" data-where="theme=markets">—</p><ul data-source="news"></ul></article>
+      <article class="nd-card nd-theme" id="news-ai" data-theme="ai"><h3>AI and data centres</h3><p class="summary dash-skeleton" data-source="themes" data-field="summary" data-where="theme=ai">—</p><ul data-source="news"></ul></article>
+      <article class="nd-card nd-theme" id="news-iran" data-theme="iran"><h3>US and Iran war</h3><p class="summary dash-skeleton" data-source="themes" data-field="summary" data-where="theme=iran">—</p><ul data-source="news"></ul></article>
+      <article class="nd-card nd-theme" id="news-geo" data-theme="geo"><h3>Geopolitics</h3><p class="summary dash-skeleton" data-source="themes" data-field="summary" data-where="theme=geo">—</p><ul data-source="news"></ul></article>
+      <article class="nd-card nd-theme" id="news-uspol" data-theme="uspol"><h3>US politics and policy</h3><p class="summary dash-skeleton" data-source="themes" data-field="summary" data-where="theme=uspol">—</p><ul data-source="news"></ul></article>
+      <article class="nd-card nd-theme" id="news-korea" data-theme="korea"><h3>Korea</h3><p class="summary dash-skeleton" data-source="themes" data-field="summary" data-where="theme=korea">—</p><ul data-source="news"></ul></article>
+      <article class="nd-card nd-theme" id="news-japan" data-theme="japan"><h3>Japan</h3><p class="summary dash-skeleton" data-source="themes" data-field="summary" data-where="theme=japan">—</p><ul data-source="news"></ul></article>
+      <article class="nd-card nd-theme" id="news-aus" data-theme="aus"><h3>Australia</h3><p class="summary dash-skeleton" data-source="themes" data-field="summary" data-where="theme=aus">—</p><ul data-source="news"></ul></article>
+      <article class="nd-card nd-theme" id="news-energy" data-theme="energy"><h3>Energy and commodities</h3><p class="summary dash-skeleton" data-source="themes" data-field="summary" data-where="theme=energy">—</p><ul data-source="news"></ul></article>
+    </div>
+  </section>
+
+  <p class="nd-foot">Prices are daily closes from Yahoo Finance (last bar may be intraday for markets open at refresh time). Headlines, theme summaries and the effects cards are rewritten by a daily 7:15am Sydney refresh routine (weekends included), with the last available prices. Nothing here is investment advice.</p>
+</div>
+
+<script>
+dash.calc('perf', {
+  title: 'Latest level and changes',
+  description: 'Per instrument: last close and change versus 1 day, 1 week, 1 month, 3 months and end-2025 (fractions; the 10-year yield in basis points).',
+  inputs: ['prices'],
+  fn: (prices) => {
+    const by = new Map();
+    for (const r of prices) {
+      if (!by.has(r.symbol)) by.set(r.symbol, { name: r.name, group: r.group, unit: r.unit, s: [] });
+      by.get(r.symbol).s.push({ d: String(r.date).slice(0, 10), c: Number(r.close) });
+    }
+    const out = [];
+    for (const [symbol, o] of by) {
+      const s = o.s.filter(p => Number.isFinite(p.c)).sort((a, b) => (a.d < b.d ? -1 : 1));
+      if (!s.length) continue;
+      const last = s[s.length - 1];
+      const at = (iso) => { let v = null; for (const p of s) { if (p.d <= iso) v = p.c; else break; } return v; };
+      const back = (n, unit) => { const d = new Date(last.d + 'T00:00:00Z'); if (unit === 'd') d.setUTCDate(d.getUTCDate() - n); else d.setUTCMonth(d.getUTCMonth() - n); return at(d.toISOString().slice(0, 10)); };
+      const bp = symbol === '^TNX';
+      const chg = (ref) => (ref == null ? null : bp ? Math.round((last.c - ref) * 100) : +(last.c / ref - 1).toFixed(4));
+      out.push({ symbol, name: o.name, group: o.group, unit: o.unit, date: last.d, last: last.c, kind: bp ? 'bp' : 'pct',
+        d1: chg(s.length > 1 ? s[s.length - 2].c : null), w1: chg(back(7, 'd')), m1: chg(back(1, 'm')), m3: chg(back(3, 'm')), ytd: chg(at('2025-12-31')) });
+    }
+    return out;
+  }
+});
+
+dash.calc('coal_basket', {
+  title: 'Coal basket, equal weight',
+  description: 'Equal-weighted index of Peabody, Core Natural Resources, Whitehaven and Yancoal, each rebased to 100 at its first close in the file; a name that did not trade on a day carries its last close.',
+  inputs: ['prices'],
+  fn: (prices) => {
+    const names = ['BTU', 'CNR', 'WHC.AX', 'YAL.AX'];
+    const by = new Map(names.map(n => [n, new Map()]));
+    const dates = new Set();
+    for (const r of prices) if (by.has(r.symbol)) { const d = String(r.date).slice(0, 10); by.get(r.symbol).set(d, Number(r.close)); dates.add(d); }
+    const base = {}, lastc = {};
+    return [...dates].sort().map(d => {
+      let sum = 0, n = 0;
+      for (const s of names) { const c = by.get(s).get(d); if (Number.isFinite(c)) lastc[s] = c; if (lastc[s] == null) continue; if (base[s] == null) base[s] = lastc[s]; sum += lastc[s] / base[s] * 100; n++; }
+      return { date: d, symbol: 'COAL', name: 'Coal basket', group: 'coal', unit: 'index', close: n ? +(sum / n).toFixed(2) : null };
+    }).filter(r => r.close != null);
+  }
+});
+</script>
+
+<script>
+const ndRoot = document.getElementById('newsdesk');
+const toDate = s => new Date(String(s).slice(0, 10) + 'T00:00:00Z');
+const fmtPct = d3.format('+.1%');
+const fmtDay = d3.utcFormat('%a %-d %b');
+const fmtNews = d3.timeFormat('%a %-d %b, %H:%M');
+const unitFmt = (unit, symbol) => {
+  if (symbol === '^TNX') return v => d3.format('.2f')(v) + '%';
+  if (unit === 'USD/bbl' || unit === 'USD/MMBtu' || unit === 'ETF' || unit === 'stock') return d3.format('$,.2f');
+  if (unit === 'USD/oz' || symbol === 'BTC-USD') return d3.format('$,.0f');
+  if (symbol === 'AUDUSD=X') return d3.format('.4f');
+  if (symbol === 'USDJPY=X' || symbol === '^VIX') return d3.format('.2f');
+  return d3.format(',.0f');
+};
+const fmtChange = (v, kind) => v == null ? '—' : kind === 'bp' ? (v > 0 ? '+' : '') + v + ' bp' : fmtPct(v);
+const signClass = v => v == null ? '' : v > 0 ? 'up' : v < 0 ? 'down' : '';
+const WINDOW_MONTHS = { '1M': 1, '3M': 3, '6M': 6, '1Y': 12 };
+
+const windowButtons = Array.from(document.querySelectorAll('#win button'));
+windowButtons.forEach(b => b.addEventListener('click', () => dash.setParams({ window: b.dataset.win })));
+const currentWindow = () => { const w = dash.params().window; return WINDOW_MONTHS[w] ? w : '3M'; };
+
+document.querySelectorAll('.nd-nav a').forEach(a => a.addEventListener('click', (ev) => {
+  const el = document.getElementById(a.getAttribute('href').slice(1));
+  if (!el) return;
+  ev.preventDefault();
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  dash.setLink(el.id);
+}));
+
+let seriesCache = null, seriesKey = null;
+function groupSeries(rows, coalRows) {
+  const key = rows.length + ':' + (coalRows ? coalRows.length : 0);
+  if (seriesCache && seriesKey === key) return seriesCache;
+  const m = new Map();
+  const add = (r) => { const c = Number(r.close); if (!Number.isFinite(c)) return; if (!m.has(r.symbol)) m.set(r.symbol, []); m.get(r.symbol).push({ d: toDate(r.date), c }); };
+  rows.forEach(add); (coalRows || []).forEach(add);
+  for (const arr of m.values()) arr.sort((a, b) => a.d - b.d);
+  seriesCache = m; seriesKey = key;
+  return m;
+}
+function windowStart(allSeries, win) {
+  const end = d3.max(Array.from(allSeries.values()), s => s.length ? s[s.length - 1].d : null);
+  const d = new Date(end); d.setUTCMonth(d.getUTCMonth() - WINDOW_MONTHS[win]);
+  return d;
+}
+const sliceFrom = (pts, start) => pts.filter(p => p.d >= start);
+const rebase = (pts) => pts.length ? pts.map(p => ({ d: p.d, v: p.c / pts[0].c * 100, c: p.c })) : [];
+const level = (pts) => pts.map(p => ({ d: p.d, v: p.c, c: p.c }));
+
+function failLine(box) { box.replaceChildren(); const f = document.createElement('div'); f.className = 'nd-fail'; f.textContent = 'Failed to load'; box.appendChild(f); }
+
+function lineChart(box, series, o) {
+  box.replaceChildren();
+  series = series.filter(s => s.pts.length > 1);
+  const W = box.clientWidth, H = o.height || 250;
+  if (!W || !series.length) return;
+  const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', o.label || '');
+  const pts = series.flatMap(s => s.pts);
+  const xDom = d3.extent(pts, p => p.d);
+  let yDom = d3.extent(pts, p => p.v); if (yDom[0] === yDom[1]) yDom = [yDom[0] - 1, yDom[1] + 1];
+  if (o.ref != null) yDom = [Math.min(yDom[0], o.ref), Math.max(yDom[1], o.ref)];
+  const y = d3.scaleLinear(yDom, [0, 1]).nice(5);
+  const fmt = o.fmt || d3.format(',.0f');
+  const probe = svg.append('text').attr('font-size', 11).attr('opacity', 0);
+  const tw = t => { probe.text(t); return probe.node().getComputedTextLength(); };
+  const yTicks = y.ticks(5);
+  const yw = d3.max(yTicks, t => tw(fmt(t))) || 0;
+  const showEnd = W >= 520;
+  const ew = showEnd ? (d3.max(series, s => tw(s.short + ' ' + fmt(s.pts[s.pts.length - 1].v))) || 0) : 0;
+  probe.remove();
+  const m = { top: 10, right: showEnd ? Math.min(ew + 12, W * 0.4) : 10, bottom: 22, left: yw + 10 };
+  const x = d3.scaleUtc(xDom, [m.left, W - m.right]);
+  y.range([H - m.bottom, m.top]);
+  svg.append('g').selectAll('line').data(yTicks).join('line').attr('x1', m.left).attr('x2', W - m.right).attr('y1', d => y(d)).attr('y2', d => y(d)).attr('stroke', 'var(--cds-chart-grid)');
+  svg.append('g').selectAll('text').data(yTicks).join('text').attr('x', m.left - 6).attr('y', d => y(d)).attr('dy', '0.32em').attr('text-anchor', 'end').attr('font-size', 11).attr('fill', 'var(--color-fg-muted)').text(fmt);
+  const nTicks = Math.max(2, Math.min(7, Math.floor((W - m.left - m.right) / 80)));
+  const span = (xDom[1] - xDom[0]) / 864e5;
+  const xf = span > 200 ? d3.utcFormat('%b %y') : d3.utcFormat('%-d %b');
+  const xt = x.ticks(nTicks).filter(t => x(t) > m.left + 20 && x(t) < W - m.right - 20);
+  svg.append('line').attr('x1', m.left).attr('x2', W - m.right).attr('y1', H - m.bottom).attr('y2', H - m.bottom).attr('stroke', 'var(--cds-chart-axis)');
+  svg.append('g').selectAll('text').data(xt).join('text').attr('x', d => x(d)).attr('y', H - m.bottom + 15).attr('text-anchor', 'middle').attr('font-size', 11).attr('fill', 'var(--color-fg-muted)').text(xf);
+  if (o.ref != null) svg.append('line').attr('x1', m.left).attr('x2', W - m.right).attr('y1', y(o.ref)).attr('y2', y(o.ref)).attr('stroke', 'var(--cds-chart-reference)').attr('stroke-dasharray', '4 4');
+  const line = d3.line().x(p => x(p.d)).y(p => y(p.v));
+  series.forEach(s => svg.append('path').attr('d', line(s.pts)).attr('fill', 'none').attr('stroke', s.color).attr('stroke-width', s.muted ? 1.5 : 2).attr('stroke-opacity', s.muted ? 0.55 : 1).attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round'));
+  if (showEnd) {
+    const labs = series.map(s => { const p = s.pts[s.pts.length - 1]; return { s, y: y(p.v), text: s.short + ' ' + fmt(p.v) }; }).sort((a, b) => a.y - b.y);
+    for (let i = 1; i < labs.length; i++) if (labs[i].y - labs[i - 1].y < 13) labs[i].y = labs[i - 1].y + 13;
+    for (let i = labs.length - 1; i >= 0; i--) { const lim = H - m.bottom - 4 - (labs.length - 1 - i) * 13; if (labs[i].y > lim) labs[i].y = lim; }
+    svg.append('g').selectAll('text').data(labs).join('text').attr('x', W - m.right + 6).attr('y', d => d.y).attr('dy', '0.32em').attr('font-size', 11).attr('fill', d => d.s.color).attr('fill-opacity', d => d.s.muted ? 0.7 : 1).text(d => d.text);
+  }
+  const dates = Array.from(new Set(pts.map(p => +p.d))).sort(d3.ascending);
+  const centre = d3.bisector(d => d).center;
+  const rule = svg.append('line').attr('y1', m.top).attr('y2', H - m.bottom).attr('stroke', 'var(--cds-chart-reference)').attr('opacity', 0);
+  const dots = svg.append('g');
+  const tip = document.createElement('div'); tip.className = 'nd-tip'; box.appendChild(tip);
+  const overlay = svg.append('rect').attr('x', m.left).attr('y', m.top).attr('width', Math.max(0, W - m.left - m.right)).attr('height', Math.max(0, H - m.top - m.bottom)).attr('fill', 'transparent');
+  const leave = () => { rule.attr('opacity', 0); dots.selectAll('circle').remove(); tip.style.display = 'none'; };
+  const move = (ev) => {
+    const [mx] = d3.pointer(ev, svg.node());
+    const t = dates[centre(dates, x.invert(mx).getTime())];
+    if (t == null) return leave();
+    rule.attr('x1', x(t)).attr('x2', x(t)).attr('opacity', 1);
+    const rows = series.map(s => { const i = d3.bisector(p => +p.d).left(s.pts, t); const p = s.pts[i] && +s.pts[i].d === t ? s.pts[i] : null; return { s, p }; }).filter(r => r.p);
+    dots.selectAll('circle').data(rows).join('circle').attr('cx', r => x(r.p.d)).attr('cy', r => y(r.p.v)).attr('r', 3.5).attr('fill', r => r.s.color);
+    tip.replaceChildren();
+    const dEl = document.createElement('div'); dEl.className = 'd'; dEl.textContent = fmtDay(new Date(t)); tip.appendChild(dEl);
+    rows.forEach(r => {
+      const row = document.createElement('div'); row.className = 'r';
+      if (series.length > 1) { const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = r.s.color; row.appendChild(sw); }
+      row.appendChild(document.createTextNode(r.s.name + ' ' + fmt(r.p.v) + (r.s.raw ? ' · ' + r.s.raw(r.p.c) : '')));
+      tip.appendChild(row);
+    });
+    tip.style.display = 'block';
+    const tipW = tip.offsetWidth;
+    const px = x(t) + 14 + tipW > W ? x(t) - 14 - tipW : x(t) + 14;
+    tip.style.left = Math.max(0, px) + 'px';
+    tip.style.top = (m.top + 4) + 'px';
+  };
+  overlay.on('mousemove', move).on('touchstart', move).on('touchmove', move).on('mouseleave', leave).on('touchend', leave);
+}
+
+function legend(el, series, fmt) {
+  el.replaceChildren();
+  series.forEach(s => {
+    if (!s.pts.length) return;
+    const first = s.pts[0], last = s.pts[s.pts.length - 1];
+    const item = document.createElement('span');
+    const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = s.color; item.appendChild(sw);
+    item.appendChild(document.createTextNode(s.name + ' '));
+    const b = document.createElement('b'); b.textContent = s.raw ? s.raw(last.c) : fmt(last.v); item.appendChild(b);
+    const chg = s.bp ? (last.c - first.c) * 100 : last.c / first.c - 1;
+    const c = document.createElement('span'); c.className = ' ' + signClass(chg); c.textContent = ' ' + (s.bp ? (chg > 0 ? '+' : '') + Math.round(chg) + ' bp' : fmtPct(chg)); item.appendChild(c);
+    el.appendChild(item);
+  });
+}
+
+function sparkline(box, pts) {
+  box.replaceChildren();
+  const W = box.clientWidth, H = 30;
+  if (!W || pts.length < 2) return;
+  const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('aria-hidden', 'true');
+  const x = d3.scaleUtc(d3.extent(pts, p => p.d), [1, W - 4]);
+  const y = d3.scaleLinear(d3.extent(pts, p => p.c), [H - 3, 3]);
+  const up = pts[pts.length - 1].c >= pts[0].c;
+  const color = up ? 'var(--color-ok)' : 'var(--color-bad)';
+  svg.append('path').attr('d', d3.line().x(p => x(p.d)).y(p => y(p.c))(pts)).attr('fill', 'none').attr('stroke', color).attr('stroke-width', 1.5).attr('stroke-linejoin', 'round');
+  const l = pts[pts.length - 1];
+  svg.append('circle').attr('cx', x(l.d)).attr('cy', y(l.c)).attr('r', 2.5).attr('fill', color);
+}
+
+const GROUP_ORDER = [['broad', 'Broad indices'], ['macro', 'Rates, commodities and crypto'], ['fx', 'FX'], ['software', 'Software'], ['semis', 'Semiconductors'], ['infra', 'Tech infrastructure, ex-semis'], ['pharma', 'Pharma'], ['energy', 'Energy'], ['coal', 'Coal']];
+const SYMBOL_ORDER = ['^GSPC', '^IXIC', '^AXJO', '^KS11', '^N225', 'BZ=F', 'CL=F', '^TNX', 'GC=F', 'BTC-USD', '^VIX', 'AUDUSD=X', 'USDJPY=X', 'KRW=X', 'IGV', 'SOXX', 'DTCR', 'VRT', 'ETN', 'DLR', 'EQIX', 'XPH', 'URA', 'UNG', 'NG=F', 'ICLN', 'BTU', 'CNR', 'WHC.AX', 'YAL.AX'];
+
+function renderTable(perf) {
+  const tbody = document.querySelector('#perf-table tbody');
+  tbody.replaceChildren();
+  if (perf.status !== 'ok') return;
+  const rows = new Map(perf.data.map(r => [r.symbol, r]));
+  for (const [g, label] of GROUP_ORDER) {
+    const syms = SYMBOL_ORDER.filter(s => rows.has(s) && rows.get(s).group === g);
+    if (!syms.length) continue;
+    const gr = document.createElement('tr'); gr.className = 'grp';
+    const gth = document.createElement('th'); gth.colSpan = 7; gth.scope = 'rowgroup'; gth.textContent = label; gr.appendChild(gth); tbody.appendChild(gr);
+    for (const s of syms) {
+      const r = rows.get(s);
+      const tr = document.createElement('tr'); tr.dataset.key = r.symbol;
+      const name = document.createElement('td'); name.textContent = r.name; if (r.unit === 'stock' && (g === 'infra' || g === 'coal')) name.className = 'sub'; tr.appendChild(name);
+      const last = document.createElement('td'); last.textContent = unitFmt(r.unit, r.symbol)(r.last); tr.appendChild(last);
+      for (const f of ['d1', 'w1', 'm1', 'm3', 'ytd']) { const td = document.createElement('td'); td.textContent = fmtChange(r[f], r.kind); td.className = signClass(r[f]); tr.appendChild(td); }
+      tbody.appendChild(tr);
+    }
+  }
+}
+
+function fillMark(el, text, cls) { el.textContent = text; el.classList.remove('dash-skeleton'); if (cls !== undefined) { el.classList.remove('up', 'down'); if (cls) el.classList.add(cls); } }
+
+function renderTiles(perf, series, start3m) {
+  const rows = perf.status === 'ok' ? new Map(perf.data.map(r => [r.symbol, r])) : new Map();
+  document.querySelectorAll('.nd-tile, .nd-chip').forEach(tile => {
+    const sym = tile.dataset.sym; const r = rows.get(sym);
+    const lastEl = tile.querySelector('[data-field="last"]'), d1El = tile.querySelector('[data-field="d1"]'), w1El = tile.querySelector('[data-field="w1"]'), m1El = tile.querySelector('[data-field="m1"]');
+    if (r) {
+      fillMark(lastEl, unitFmt(r.unit, r.symbol)(r.last));
+      fillMark(d1El, fmtChange(r.d1, r.kind), signClass(r.d1));
+      if (w1El) fillMark(w1El, fmtChange(r.w1, r.kind), signClass(r.w1));
+      if (m1El) fillMark(m1El, fmtChange(r.m1, r.kind), signClass(r.m1));
+    } else if (perf.status !== 'loading') { fillMark(lastEl, '—'); fillMark(d1El, '—', ''); if (w1El) fillMark(w1El, '—', ''); if (m1El) fillMark(m1El, '—', ''); }
+    const sp = tile.querySelector('.t-spark');
+    if (sp) { const pts = series && series.get(sym) ? sliceFrom(series.get(sym), start3m) : []; sparkline(sp, pts); }
+  });
+}
+
+function renderNews(themes, news) {
+  const tmap = themes.status === 'ok' ? new Map(themes.data.map(t => [t.theme, t])) : new Map();
+  const brief = tmap.get('brief');
+  const asof = document.querySelector('.nd-asof'), lead = document.getElementById('brief');
+  if (brief) { fillMark(asof, brief.asof || ''); fillMark(lead, brief.summary || ''); }
+  else if (themes.status !== 'loading') { fillMark(asof, themes.status === 'error' ? 'Brief failed to load' : '—'); fillMark(lead, '—'); }
+  const items = news.status === 'ok' ? news.data : [];
+  document.querySelectorAll('.nd-theme').forEach(card => {
+    const id = card.dataset.theme; const t = tmap.get(id);
+    const p = card.querySelector('.summary'), ul = card.querySelector('ul');
+    if (t) fillMark(p, t.summary || ''); else if (themes.status !== 'loading') fillMark(p, themes.status === 'error' ? 'Summary failed to load' : '—');
+    ul.replaceChildren();
+    if (news.status === 'error') { const li = document.createElement('li'); li.className = 'nd-fail'; li.textContent = 'Headlines failed to load'; ul.appendChild(li); return; }
+    items.filter(n => n.theme === id).sort((a, b) => (a.published < b.published ? 1 : -1)).forEach(n => {
+      const li = document.createElement('li');
+      const a = document.createElement('a'); a.href = String(n.url || '#'); a.target = '_blank'; a.rel = 'noopener'; a.textContent = n.title; li.appendChild(a);
+      const src = document.createElement('span'); src.className = 'src';
+      const when = new Date(n.published); src.textContent = n.source + (isNaN(when) ? '' : ' · ' + fmtNews(when));
+      li.appendChild(src); ul.appendChild(li);
+    });
+  });
+}
+
+function renderEffects(derivs, perf) {
+  const grid = document.getElementById('effects-grid');
+  grid.replaceChildren();
+  if (derivs.status === 'error') { const f = document.createElement('div'); f.className = 'nd-fail'; f.textContent = 'Failed to load'; grid.appendChild(f); return; }
+  if (derivs.status !== 'ok') return;
+  const rows = perf.status === 'ok' ? new Map(perf.data.map(r => [r.symbol, r])) : new Map();
+  const evalRule = (d) => {
+    const r = rows.get(d.symbol); const v = r ? r[d.field] : null;
+    const th = d.threshold == null ? null : Number(d.threshold);
+    let on = d.op === 'always';
+    if (!on && v != null && th != null) on = d.op === '>' ? v > th : d.op === '<' ? v < th : d.op === '>=' ? v >= th : d.op === '<=' ? v <= th : false;
+    let reading = '';
+    if (r && v != null) { const f = d.field === 'last' ? unitFmt(r.unit, r.symbol) : (x => fmtChange(x, r.kind)); reading = r.name + ' ' + (d.field === 'last' ? '' : d.field + ' ') + f(v); }
+    return { on, reading };
+  };
+  const items = derivs.data.map(d => Object.assign({ d }, evalRule(d))).sort((a, b) => (a.on === b.on ? Number(a.d.order) - Number(b.d.order) : a.on ? -1 : 1));
+  const asList = (v) => { if (Array.isArray(v)) return v; if (typeof v === 'string' && v.trim().startsWith('[')) { try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch (e) { return []; } } return v == null || v === '' ? [] : [String(v)]; };
+  const list = (title, arr, cls) => { const h = document.createElement('h4'); h.textContent = title; const ul = document.createElement('ul'); if (cls) ul.className = cls; asList(arr).forEach(s => { const li = document.createElement('li'); li.textContent = s; ul.appendChild(li); }); return [h, ul]; };
+  items.forEach(({ d, on, reading }) => {
+    const card = document.createElement('article'); card.className = 'nd-card nd-effect' + (on ? '' : ' off'); card.id = 'effect-' + d.id;
+    const head = document.createElement('div'); head.className = 'ehead';
+    const h3 = document.createElement('h3'); h3.textContent = d.driver; head.appendChild(h3);
+    const pill = document.createElement('span'); pill.className = 'pill' + (on ? ' on' : ''); pill.textContent = on ? (d.op === 'always' ? 'Structural' : 'Live') : 'Not triggered'; head.appendChild(pill);
+    card.appendChild(head);
+    const p = document.createElement('p'); p.className = 'reading'; p.textContent = (reading ? reading + ' · ' : '') + 'Trigger: ' + d.trigger_label; card.appendChild(p);
+    list('Second order', d.second).forEach(el => card.appendChild(el));
+    list('Third order', d.third).forEach(el => card.appendChild(el));
+    list('Suggestions', d.suggest, 'suggest').forEach(el => card.appendChild(el));
+    const watch = asList(d.watch); if (watch.length) { const h = document.createElement('h4'); h.textContent = 'Watch'; card.appendChild(h); const w = document.createElement('div'); w.className = 'watch'; watch.forEach(x => { const s = document.createElement('span'); s.textContent = x; w.appendChild(s); }); card.appendChild(w); }
+    grid.appendChild(card);
+  });
+}
+
+let linked = false;
+dash.onData(() => {
+  const prices = dash.data('prices'), perf = dash.data('perf'), coal = dash.data('coal_basket'), themes = dash.data('themes'), news = dash.data('news');
+  const win = currentWindow();
+  windowButtons.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.win === win)));
+  const colors = dash.colors;
+  const boxes = ['broad-chart', 'oil-chart', 'tnx-chart', 'tech-chart', 'energy-chart'].map(id => document.getElementById(id));
+  if (prices.status === 'ok' && prices.data.length) {
+    const series = groupSeries(prices.data, coal.status === 'ok' ? coal.data : null);
+    const start = windowStart(series, win);
+    const start3m = windowStart(series, '3M');
+    boxes.forEach(b => b.classList.remove('dash-skeleton'));
+    const get = s => series.get(s) || [];
+    const mk = (sym, name, short, i, opts) => Object.assign({ name, short, color: colors[i % colors.length], pts: rebase(sliceFrom(get(sym), start)), raw: unitFmt(opts && opts.unit || 'index', sym) }, opts || {});
+    const rb = d3.format(',.1f');
+    const broad = [mk('^GSPC', 'S&P 500', 'S&P', 0), mk('^IXIC', 'Nasdaq', 'Nasdaq', 1), mk('^AXJO', 'ASX 200', 'ASX', 2), mk('^KS11', 'KOSPI', 'KOSPI', 3), mk('^N225', 'Nikkei 225', 'Nikkei', 4)];
+    lineChart(document.getElementById('broad-chart'), broad, { fmt: rb, ref: 100, label: 'Equity indices rebased to 100' });
+    legend(document.getElementById('broad-legend'), broad, rb);
+    const usd2 = d3.format('$,.2f');
+    const oil = [{ name: 'Brent', short: 'Brent', color: colors[0], pts: level(sliceFrom(get('BZ=F'), start)) }, { name: 'WTI', short: 'WTI', color: colors[1], pts: level(sliceFrom(get('CL=F'), start)) }];
+    lineChart(document.getElementById('oil-chart'), oil, { fmt: usd2, label: 'Crude oil, USD per barrel' });
+    legend(document.getElementById('oil-legend'), oil, usd2);
+    const pct2 = v => d3.format('.2f')(v) + '%';
+    const tnx = [{ name: 'US 10-year', short: '10y', color: colors[0], pts: level(sliceFrom(get('^TNX'), start)), bp: true }];
+    lineChart(document.getElementById('tnx-chart'), tnx, { fmt: pct2, label: 'US 10-year Treasury yield' });
+    legend(document.getElementById('tnx-legend'), tnx, pct2);
+    const tech = [mk('IGV', 'Software (IGV)', 'Software', 0, { unit: 'ETF' }), mk('SOXX', 'Semis (SOXX)', 'Semis', 1, { unit: 'ETF' }), mk('DTCR', 'DC infra (DTCR)', 'DC infra', 2, { unit: 'ETF' }), mk('XPH', 'Pharma (XPH)', 'Pharma', 3, { unit: 'ETF' }), mk('^GSPC', 'S&P 500', 'S&P', 7, { muted: true })];
+    lineChart(document.getElementById('tech-chart'), tech, { fmt: rb, ref: 100, label: 'Tech, infrastructure and pharma rebased to 100' });
+    legend(document.getElementById('tech-legend'), tech, rb);
+    const energy = [mk('URA', 'Uranium (URA)', 'Uranium', 0, { unit: 'ETF' }), mk('UNG', 'US gas (UNG)', 'Gas', 1, { unit: 'ETF' }), mk('COAL', 'Coal basket', 'Coal', 2, { raw: v => d3.format(',.1f')(v) + ' idx' }), mk('ICLN', 'Clean energy (ICLN)', 'Clean', 3, { unit: 'ETF' })];
+    lineChart(document.getElementById('energy-chart'), energy, { fmt: rb, ref: 100, label: 'Energy sub-sectors rebased to 100' });
+    legend(document.getElementById('energy-legend'), energy, rb);
+    renderTiles(perf, series, start3m);
+  } else {
+    if (prices.status === 'error') { boxes.forEach(b => { b.classList.remove('dash-skeleton'); failLine(b); }); }
+    renderTiles(perf, null, null);
+  }
+  renderTable(perf);
+  renderNews(themes, news);
+  renderEffects(dash.data('derivatives'), perf);
+  if (!linked && location.hash.length > 1) { const el = document.getElementById(location.hash.slice(1)); if (el) { el.scrollIntoView(); linked = true; } }
+});
+</script>
+
+<div class="dash-foot">
+  <span>Refreshed daily at 7:15am Sydney by GitHub Actions. Prices from Yahoo Finance; headlines from Google News. Written summaries and effects cards are refreshed only when the Anthropic API key is configured.</span>
+  <span id="dash-loaded"></span>
+</div>
+</body>
+</html>

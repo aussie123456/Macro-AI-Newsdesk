@@ -1,0 +1,64 @@
+[
+   {
+      "asof" : "Sunday 8 Nov 2026, 7:15am AEDT. US prices are Friday's closes; Asian indices, oil, gold and FX are Friday's last prints, and Bitcoin is live.",
+      "label" : "Brief",
+      "order" : 0,
+      "summaries_written_at" : "2026-11-07T20:21:31Z",
+      "summary" : "Three things matter this Sunday. First, the post-midterm AI rout is now a funding story: Microsoft is pulling back from Oracle and neoclouds, CoreWeave's 2032 bonds yield above 16% and ING is auctioning $500m of data-centre loans. Second, IREN's quarter (AI cloud revenue near $200m, the Texas delay sitting with Microsoft) drew a Friday rebound, but SOXX is still down 27% in a month and VIX is 25.6. Third, US CPI on Tuesday decides whether the Fed's hiking path, with the 10-year at 4.86%, keeps pressing on financing costs.",
+      "theme" : "brief"
+   },
+   {
+      "label" : "Markets wrap and week ahead",
+      "order" : 1,
+      "summary" : "A brutal week for risk. The S&P 500 fell 4.4% on Thursday, its worst day since April 2025, after Democrats swept Congress and investors priced data-centre curbs. It bounced 0.3% on Friday to 7,377 but lost 2.7% on the week and 5.0% over the month. The Nasdaq rose 1.1% on Friday to 24,580, still a fourth straight weekly fall (-3.4%), and SOXX rebounded 3.5% but is down 13% on the week. Asia took the second leg: the KOSPI lost 6.0% and the Nikkei 6.0% on Friday. October payrolls rose 165,000 and unemployment fell to 4.1%, which kept Fed hike bets alive. The 10-year rose 2bp to 4.86%. The VIX eased to 25.6 but is up 32% on the week. Brent fell 16% on the week to $98 and gold rose 4.5% to $4,075. Week ahead: US CPI on Tuesday, Nebius results on 12 November, and Ukraine talks in Abu Dhabi on 10 and 11 November.",
+      "theme" : "markets"
+   },
+   {
+      "label" : "AI and data centres",
+      "order" : 2,
+      "summary" : "The midterm backlash moved from the ballot box to funding. Voters rejected data-centre projects in nearly 40 local measures, and Texas elected a governor who backs a moratorium. Microsoft is winding down its Oracle lease, using fewer neoclouds and tightening oversight of Nebius, IREN and Nscale projects. In credit, CoreWeave's 2032 bonds yield above 16%, ING is auctioning $500m of data-centre loans that include a slice of Stargate, and KBRA reported the largest quarterly jump in private-credit defaults. Meta's bond sale shows tech debt now pricing wider. IREN reported AI cloud revenue nearly tripling to about $200m with a wider loss, confirmed the Microsoft Texas delay was caused by a Microsoft design change, and outlined $15bn of capex while exiting bitcoin mining. Its shares rebounded on Friday. DTCR is down 8.4% over the month, VRT 21% and ETN 7.6% on the week. Protests spread to Microsoft's Amsterdam site.",
+      "theme" : "ai"
+   },
+   {
+      "label" : "US and Iran war",
+      "order" : 3,
+      "summary" : "The war is escalating and being negotiated at the same time. Trump confirmed 'minor strikes' on Qeshm Island and on an Iranian air-defence system, and the US is extending its naval blockade to Iranian land commerce and the Caspian. Iran says Hormuz stays shut until Washington accepts seven conditions. It exempts ships for China, India, Qatar and Iraq, and has lifted its self-imposed limit on missile range. Tankers struck mines and caught fire on several days this week. Qatar is pushing a 48-hour plan to reopen the strait in return for nuclear inspections, and JD Vance is reported to be leading a quiet ceasefire push. Markets read the Democratic sweep as pressure for a deal: Brent fell 16.4% on the week to $98.32 and WTI fell 12.8% to $90.83. Both are still about 60% higher year to date, so any break in talks puts $105 to $110 back in play.",
+      "theme" : "iran"
+   },
+   {
+      "label" : "Geopolitics",
+      "order" : 4,
+      "summary" : "Allies and rivals are recalibrating around a Trump weakened by the midterms. China confirmed plans for a Xi-Trump-Putin meeting, and Beijing is preparing to host what Chinese commentary calls a lame-duck president. US defence secretary Hegseth and Admiral Paparo may visit China soon. A Democratic Congress is expected to protect Taiwan policy and press on arms sales, and the China-Japan row over Takaichi's Taiwan remarks has entered its second year with no thaw. On Ukraine, US, Russian and Ukrainian delegations meet in Abu Dhabi on 10 and 11 November. Ahead of the talks Russia hit Kyiv and energy infrastructure with missile and drone barrages, and Zelensky called for a winter ceasefire to allow elections. Washington has proposed a new European security framework. Gold rose 4.5% on the week to $4,075 as investors bought havens during the equity rout.",
+      "theme" : "geo"
+   },
+   {
+      "label" : "US politics and policy",
+      "order" : 5,
+      "summary" : "Democrats won both chambers, giving Washington divided government for the last two years of Trump's term. Analysts see tariffs, Iran war spending and Trump's fiscal agenda facing scrutiny, and a Senate wall against his pressure campaign on the Fed. The Fed raised rates this week and signalled more tightening, and New York Fed president Williams said inflation is too high. Commentary frames Fed chair Warsh as a winner from the election, with more room to act on rates. October payrolls rose 165,000, beating forecasts, and unemployment fell to 4.1%, which kept hike bets alive even as the 10-year eased 7bp on the week to 4.86%. On data centres, Bernie Sanders is pushing for a national moratorium and states are moving faster than Washington. Tuesday's CPI is the next test for the rate path and for the dollar.",
+      "theme" : "uspol"
+   },
+   {
+      "label" : "Korea",
+      "order" : 6,
+      "summary" : "Korea took the hardest hit from the AI rout. The KOSPI fell 5.3% on Thursday and another 6.0% on Friday to 5,060. An 8.5% intraday drop tripped a circuit breaker, the index briefly traded below 4,900, and it is down 11.7% on the week and 25.6% over the month. Samsung and SK Hynix led the losses on fears of US data-centre curbs. Foreigners sold heavily and the won weakened 1.2% to 1,356 per dollar, while the Korean 10-year yield fell to 3.85%. The government waived the 140% collateral ratio on margin loans for three months and is weighing a market stabilisation fund and short-selling measures. The opposition blames the Lee government and pension-fund exposure to chips. September's current-account surplus topped $60bn on AI chip exports, which shows how much of the economy depends on the US capex cycle.",
+      "theme" : "korea"
+   },
+   {
+      "label" : "Japan",
+      "order" : 7,
+      "summary" : "The Nikkei fell 6.0% on Friday to 57,430 and entered a bear market. It is down 11.2% on the week and 18.7% over the month, led by SoftBank, Advantest and Tokyo Electron, while the broader TOPIX held up better. Tokyo plans to use proceeds from sales of the BOJ's ETF holdings to fund spending, which raises fiscal questions. The BOJ held at 1.25%, but its minutes point to more hikes, and markets price roughly 68% odds of a December move. Governor Ueda said AI could help Japan with its labour shortages. The yen strengthened briefly as a haven, then weakened again after strong US payrolls. USD/JPY is 158.4, up 0.6% on the day and close to the 160 level where Japan has intervened before. FX traders say the blue wave could support the yen if the AI trade keeps unwinding. Japan is also releasing more oil from reserves because of the Hormuz crunch.",
+      "theme" : "japan"
+   },
+   {
+      "label" : "Australia",
+      "order" : 8,
+      "summary" : "The ASX 200 rose 2.6% to a two-month high on Thursday on the US result, then slipped 0.5% on Friday to 9,020.8. It still gained 1.9% on the week, with banks and defensives offsetting tech. The RBA lifted the cash rate to 4.85%, but guidance read as dovish, and Bloomberg reports the hiking campaign is all but over as tension grows within the bank. AUD/USD fell 2.3% on the week to 0.6868, below 0.70. Officials argued about trust in the inflation target after Andrew Hauser's speech, and the AFR warns of a recession-like squeeze. Albanese defended Labor's inflation record and is looking at spending cuts. Labor argues America's data-centre pain is Australia's gain, though local fights such as Tungkillo show the backlash travels. NextDC jumped after Goodman and Digital Realty took stakes, and it faces class actions.",
+      "theme" : "aus"
+   },
+   {
+      "label" : "Energy and commodities",
+      "order" : 9,
+      "summary" : "The war premium in oil drained out fast. Brent fell 16.4% on the week to $98.32 and WTI fell 12.8% to $90.83, their steepest weekly drop since 2020, on hopes the midterm result pushes Trump toward an Iran deal. A Bloomberg survey shows OPEC output close to pre-war levels on a Saudi rebound. Mine strikes in Hormuz keep a floor under prices. Henry Hub settled at $3.00 (+1.7%) on record LNG feedgas, while a cyclone cut Australian LNG supply and JERA expects Asian LNG prices to stay firm. Coal sold off: Peabody fell 27.7% on the week after a larger-than-expected loss, and Whitehaven and Yancoal each fell about 8.8%. Core Natural Resources rose 5.5% on Friday after its results. Uranium is near $92, but URA fell 4.1% on the week as data-centre demand doubts spread. ICLN rose 7.5%, and gold is at $4,075.",
+      "theme" : "energy"
+   }
+]
